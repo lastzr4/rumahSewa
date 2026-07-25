@@ -20,7 +20,7 @@ export async function ensureMonthPayments(month: Date) {
   });
 
   await Promise.all(
-    tenants.map((t: { id: string; monthlyRent: unknown }) =>
+    tenants.map((t) =>
       prisma.payment.upsert({
         where: { tenantId_month: { tenantId: t.id, month: key } },
         create: {
@@ -73,10 +73,7 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
     pendingCount: pending._count,
     pendingAmount: Number(pending._sum.amountDue ?? 0),
     overdueCount: overdue.length,
-    overdueTenants: overdue.map((p: {
-      tenant: { id: string; name: string; unit: string };
-      amountDue: unknown;
-    }) => ({
+    overdueTenants: overdue.map((p) => ({
       id: p.tenant.id,
       name: p.tenant.name,
       unit: p.tenant.unit,
