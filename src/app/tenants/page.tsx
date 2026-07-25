@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { Plus, Search, Phone } from "lucide-react";
+import { Plus, Search, Phone, Users } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ type TenantListItem = {
   phone: string;
   unit: string;
   monthlyRent: string;
+  occupants: number;
   status: "ACTIVE" | "INACTIVE";
   payments: { status: "PAID" | "PENDING" | "OVERDUE" }[];
   _count: { documents: number };
@@ -105,7 +106,8 @@ export default function TenantsPage() {
                         {t.status === "INACTIVE" && <Badge variant="muted">Inactive</Badge>}
                       </div>
                       <p className="flex items-center gap-1 truncate text-xs text-muted-foreground">
-                        Unit {t.unit} · <Phone className="h-3 w-3" /> {t.phone}
+                        Unit {t.unit} · <Phone className="h-3 w-3" /> {t.phone} ·{" "}
+                        <Users className="h-3 w-3" /> {t.occupants}
                       </p>
                     </div>
                     <div className="text-right">

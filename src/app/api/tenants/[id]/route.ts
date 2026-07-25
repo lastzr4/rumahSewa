@@ -9,6 +9,7 @@ const updateSchema = z.object({
   phone: z.string().min(1).optional(),
   unit: z.string().min(1).optional(),
   monthlyRent: z.coerce.number().positive().optional(),
+  occupants: z.coerce.number().int().positive().optional(),
   leaseStart: z.coerce.date().optional(),
   leaseEnd: z.coerce.date().optional(),
   status: z.enum(["ACTIVE", "INACTIVE"]).optional(),

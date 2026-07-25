@@ -9,6 +9,7 @@ const tenantSchema = z.object({
   phone: z.string().min(1, "Phone number is required"),
   unit: z.string().min(1, "Unit/room number is required"),
   monthlyRent: z.coerce.number().positive("Rent must be greater than 0"),
+  occupants: z.coerce.number().int().positive("Must be at least 1").optional(),
   leaseStart: z.coerce.date(),
   leaseEnd: z.coerce.date(),
   status: z.enum(["ACTIVE", "INACTIVE"]).optional(),

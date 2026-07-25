@@ -7,11 +7,13 @@ export function cn(...inputs: ClassValue[]) {
 
 export function formatCurrency(value: number | string) {
   const n = typeof value === "string" ? parseFloat(value) : value;
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
+  const amount = Number.isFinite(n) ? n : 0;
+  // Intl's MYR formatting is inconsistent across runtimes (some emit "MYR",
+  // some "RM"), so we format the number plainly and prefix "RM" ourselves.
+  const formatted = new Intl.NumberFormat("en-MY", {
     maximumFractionDigits: 0,
-  }).format(Number.isFinite(n) ? n : 0);
+  }).format(amount);
+  return `RM${formatted}`;
 }
 
 export function formatDate(date: Date | string) {

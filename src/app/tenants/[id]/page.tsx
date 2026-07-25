@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Pencil, Trash2, Phone, Calendar } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2, Phone, Calendar, Users } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +17,7 @@ type TenantDetail = {
   phone: string;
   unit: string;
   monthlyRent: string;
+  occupants: number;
   leaseStart: string;
   leaseEnd: string;
   status: "ACTIVE" | "INACTIVE";
@@ -123,6 +124,10 @@ export default function TenantDetailPage() {
             <Phone className="h-3.5 w-3.5" /> {tenant.phone} · Unit {tenant.unit}
           </p>
           <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <Users className="h-3.5 w-3.5" />
+            {tenant.occupants} {tenant.occupants === 1 ? "occupant" : "occupants"}
+          </p>
+          <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
             <Calendar className="h-3.5 w-3.5" />
             {formatDate(tenant.leaseStart)} – {formatDate(tenant.leaseEnd)}
           </p>
@@ -203,6 +208,7 @@ export default function TenantDetailPage() {
           phone: tenant.phone,
           unit: tenant.unit,
           monthlyRent: tenant.monthlyRent,
+          occupants: String(tenant.occupants ?? 1),
           leaseStart: tenant.leaseStart.slice(0, 10),
           leaseEnd: tenant.leaseEnd.slice(0, 10),
           status: tenant.status,

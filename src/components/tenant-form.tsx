@@ -13,6 +13,7 @@ export type TenantFormValues = {
   phone: string;
   unit: string;
   monthlyRent: string;
+  occupants: string;
   leaseStart: string;
   leaseEnd: string;
   status: "ACTIVE" | "INACTIVE";
@@ -24,6 +25,7 @@ const EMPTY: TenantFormValues = {
   phone: "",
   unit: "",
   monthlyRent: "",
+  occupants: "1",
   leaseStart: "",
   leaseEnd: "",
   status: "ACTIVE",
@@ -108,7 +110,7 @@ export function TenantForm({
 
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="rent">Monthly rent *</Label>
+            <Label htmlFor="rent">Monthly rent (RM) *</Label>
             <Input
               id="rent"
               type="number"
@@ -121,16 +123,29 @@ export function TenantForm({
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="status">Status</Label>
-            <Select
-              id="status"
-              value={values.status}
-              onChange={(e) => update({ status: e.target.value as "ACTIVE" | "INACTIVE" })}
-            >
-              <option value="ACTIVE">Active</option>
-              <option value="INACTIVE">Inactive</option>
-            </Select>
+            <Label htmlFor="occupants">No. of occupants</Label>
+            <Input
+              id="occupants"
+              type="number"
+              min="1"
+              step="1"
+              value={values.occupants}
+              onChange={(e) => update({ occupants: e.target.value })}
+              placeholder="1"
+            />
           </div>
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="status">Status</Label>
+          <Select
+            id="status"
+            value={values.status}
+            onChange={(e) => update({ status: e.target.value as "ACTIVE" | "INACTIVE" })}
+          >
+            <option value="ACTIVE">Active</option>
+            <option value="INACTIVE">Inactive</option>
+          </Select>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
