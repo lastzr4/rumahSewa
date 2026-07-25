@@ -29,6 +29,13 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN addgroup --system --gid 1001 nodejs \
   && adduser --system --uid 1001 nextjs
 
+# Install the exact Prisma CLI version pinned in package.json so that
+# `npx prisma migrate deploy` (run by our own pre-deploy step, or by any
+# platform auto-detected release command) resolves to this local binary
+# instead of fetching the latest major version from the registry at deploy
+# time — which broke deploys once Prisma 7 shipped a breaking schema change.
+RUN npm install -g prisma@5.20.0
+
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
