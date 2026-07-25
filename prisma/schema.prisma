@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum TenantStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum DocumentType {
+  TENANT_ID
+  LEASE_AGREEMENT
+  RECEIPT
+  OTHER
+}
+
+enum PaymentStatus {
+  PAID
+  PENDING
+  OVERDUE
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  CARD
+  MOBILE_MONEY
+  CHECK
+  OTHER
+}
+
+model Tenant {
+  id             String       @id @default(cuid())
+  name           String
+  phone          String
+  unit           String
+  monthlyRent    Decimal      @db.Decimal(10, 2)
+  leaseStart     DateTime
+  leaseEnd       DateTime
+  status         TenantStatus @default(ACTIVE)
+  notes          String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  documents      Document[]
+  payments       Payment[]
+
+  @@index([status])
+}
+
+model Document {
+  id         String       @id @default(cuid())
+  tenantId   String
+  tenant     Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  type       DocumentType
+  fileName   String
+  fileUrl    String
+  mimeType   String
+  size       Int
+  uploadedAt DateTime     @default(now())
+
+  @@index([tenantId])
+}
+
+model Payment {
+  id            String        @id @default(cuid())
+  tenantId      String
+  tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  month         DateTime      // normalized to the 1st of the billing month
+  amountDue     Decimal       @db.Decimal(10, 2)
+  amountPaid    Decimal?      @db.Decimal(10, 2)
+  status        PaymentStatus @default(PENDING)
+  paymentDate   DateTime?
+  paymentMethod PaymentMethod?
+  receiptUrl    String?
+  notes         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@unique([tenantId, month])
+  @@index([status])
+  @@index([month])
+}
