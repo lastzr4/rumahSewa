@@ -1,4 +1,4 @@
-import { writeFile, mkdir } from "fs/promises";
+import { writeFile, mkdir, unlink } from "fs/promises";
 import path from "path";
 import { randomUUID } from "crypto";
 
@@ -52,6 +52,44 @@ async function uploadToLocalDisk(file: File, folder: string): Promise<UploadResu
     mimeType: file.type || "application/octet-stream",
     fileName: file.name,
   };
+}
+
+/**
+ * Removes a previously-uploaded file given the URL that was returned from
+ * uploadFile(). Best-effort: failures are swallowed by the caller so a
+ * missing/already-deleted file never blocks removing the DB record.
+ */
+export async function deleteFile(fileUrl: string): Promise<void> {
+  if (provider === "supabase") {
+    return deleteFromSupabase(fileUrl);
+  }
+  return deleteFromLocalDisk(fileUrl);
+}
+
+async function deleteFromLocalDisk(fileUrl: string) {
+  const match = fileUrl.match(/^\/api\/files\/(.+)$/);
+  if (!match) return;
+  const relative = match[1];
+  if (relative.includes("..")) return;
+  const filePath = path.join(UPLOAD_ROOT, relative);
+  if (!filePath.startsWith(UPLOAD_ROOT)) return;
+  await unlink(filePath);
+}
+
+async function deleteFromSupabase(fileUrl: string) {
+  const { createClient } = await import("@supabase/supabase-js");
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const bucket = process.env.SUPABASE_STORAGE_BUCKET || "property-documents";
+  if (!url || !serviceKey) return;
+
+  const supabase = createClient(url, serviceKey);
+  const marker = `/object/public/${bucket}/`;
+  const idx = fileUrl.indexOf(marker);
+  if (idx === -1) return;
+  const objectPath = fileUrl.slice(idx + marker.length);
+  const { error } = await supabase.storage.from(bucket).remove([objectPath]);
+  if (error) throw error;
 }
 
 async function uploadToSupabase(file: File, folder: string): Promise<UploadResult> {

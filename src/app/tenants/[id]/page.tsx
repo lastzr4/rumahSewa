@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Pencil, Trash2, Phone, Calendar, Users, Wallet } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2, Phone, Calendar, Users, Wallet, TrendingUp } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,7 @@ import { TenantForm, type TenantFormValues } from "@/components/tenant-form";
 import { FileUploadButton, DocumentLink } from "@/components/file-upload";
 import { WhatsAppButton } from "@/components/whatsapp-button";
 import {
+  cn,
   formatCurrency,
   formatDate,
   formatMonth,
@@ -119,12 +120,22 @@ export default function TenantDetailPage() {
     router.push("/tenants");
   };
 
+  const handleDeleteDocument = async (documentId: string) => {
+    if (!confirm("Delete this file? This cannot be undone.")) return;
+    await fetch(`/api/documents/${documentId}`, { method: "DELETE" });
+    await load();
+  };
+
   if (loading) {
     return <p className="p-6 text-center text-sm text-muted-foreground">Loading...</p>;
   }
   if (!tenant) {
     return <p className="p-6 text-center text-sm text-muted-foreground">Tenant not found.</p>;
   }
+
+  const totalCollected = tenant.payments
+    .filter((p) => p.status === "PAID")
+    .reduce((sum, p) => sum + Number(p.amountPaid ?? p.amountDue), 0);
 
   return (
     <main className="flex flex-col gap-5 p-4 pt-6">
@@ -209,9 +220,19 @@ export default function TenantDetailPage() {
         {tenant.documents.length > 0 && (
           <div className="flex flex-col gap-2 pt-1">
             {tenant.documents.map((d) => (
-              <div key={d.id} className="flex flex-col gap-1">
-                <span className="text-xs text-muted-foreground">{DOC_LABELS[d.type] ?? d.type}</span>
-                <DocumentLink fileUrl={d.fileUrl} fileName={d.fileName} mimeType={d.mimeType} />
+              <div key={d.id} className="flex items-center gap-2">
+                <div className="flex min-w-0 flex-1 flex-col gap-1">
+                  <span className="text-xs text-muted-foreground">{DOC_LABELS[d.type] ?? d.type}</span>
+                  <DocumentLink fileUrl={d.fileUrl} fileName={d.fileName} mimeType={d.mimeType} />
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleDeleteDocument(d.id)}
+                >
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
               </div>
             ))}
           </div>
@@ -219,13 +240,29 @@ export default function TenantDetailPage() {
       </section>
 
       <section className="flex flex-col gap-2">
-        <h2 className="text-base font-semibold">Payment history</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-semibold">Payment history</h2>
+          {tenant.payments.length > 0 && (
+            <p className="flex items-center gap-1 text-sm font-medium text-success">
+              <TrendingUp className="h-3.5 w-3.5" />
+              {formatCurrency(totalCollected)} collected
+            </p>
+          )}
+        </div>
         {tenant.payments.length === 0 ? (
           <p className="text-sm text-muted-foreground">No payment records yet.</p>
         ) : (
           <div className="flex flex-col gap-2">
             {tenant.payments.map((p) => (
-              <Card key={p.id}>
+              <Card
+                key={p.id}
+                className={cn(
+                  "border-l-4",
+                  p.status === "PAID" && "border-l-success bg-success/5",
+                  p.status === "OVERDUE" && "border-l-destructive bg-destructive/5",
+                  p.status === "PENDING" && "border-l-warning bg-warning/5"
+                )}
+              >
                 <CardContent className="flex items-center justify-between p-3">
                   <div>
                     <p className="text-sm font-medium">{formatMonth(p.month)}</p>

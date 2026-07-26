@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
@@ -239,7 +239,23 @@ function RecordPaymentDialog({
                 label={receiptUrl ? "Replace receipt" : "Upload receipt"}
                 onUploaded={setReceiptUrl}
               />
-              {receiptUrl && <DocumentLink fileUrl={receiptUrl} fileName="Current receipt" />}
+              {receiptUrl && (
+                <div className="flex items-center gap-2">
+                  <div className="min-w-0 flex-1">
+                    <DocumentLink fileUrl={receiptUrl} fileName="Current receipt" />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      if (confirm("Remove this receipt?")) setReceiptUrl(null);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
+              )}
             </div>
           </>
         )}
