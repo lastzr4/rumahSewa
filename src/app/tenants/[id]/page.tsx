@@ -135,9 +135,17 @@ export default function TenantDetailPage() {
     return <p className="p-6 text-center text-sm text-muted-foreground">Tenant not found.</p>;
   }
 
-  const totalCollected = tenant.payments
+  const rentCollected = tenant.payments
     .filter((p) => p.status === "PAID")
     .reduce((sum, p) => sum + Number(p.amountPaid ?? p.amountDue), 0);
+  const utilityCollected = tenant.utilityBills
+    .filter((b) => b.status === "PAID")
+    .reduce((sum, b) => sum + Number(b.amountPaid ?? b.amountDue), 0);
+  const depositCollected = tenant.depositPaid ? Number(tenant.depositAmount) : 0;
+  const overallCollected = rentCollected + utilityCollected + depositCollected;
+  // Kept as an alias so the Payment history section below (which only
+  // cares about rent) doesn't need to change.
+  const totalCollected = rentCollected;
 
   return (
     <main className="flex flex-col gap-5 p-4 pt-6">
@@ -186,6 +194,20 @@ export default function TenantDetailPage() {
                 ? `Received${tenant.depositPaidDate ? ` ${formatDate(tenant.depositPaidDate)}` : ""}`
                 : "Not received"}
             </Badge>
+          </div>
+          <div className="flex items-center justify-between rounded-lg bg-success/10 px-3 py-2">
+            <p className="flex items-center gap-1.5 text-sm font-medium">
+              <TrendingUp className="h-3.5 w-3.5 text-success" />
+              Total collected overall
+            </p>
+            <div className="text-right">
+              <p className="text-base font-semibold text-success">{formatCurrency(overallCollected)}</p>
+              <p className="text-[11px] text-muted-foreground">
+                Rent {formatCurrency(rentCollected)}
+                {depositCollected > 0 ? ` + Deposit ${formatCurrency(depositCollected)}` : ""}
+                {utilityCollected > 0 ? ` + Utilities ${formatCurrency(utilityCollected)}` : ""}
+              </p>
+            </div>
           </div>
           {tenant.notes && <p className="pt-1 text-sm">{tenant.notes}</p>}
           <WhatsAppButton
