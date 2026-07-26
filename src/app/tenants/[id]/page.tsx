@@ -9,7 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { PaymentStatusBadge } from "@/components/payment-status-badge";
 import { TenantForm, type TenantFormValues } from "@/components/tenant-form";
 import { FileUploadButton, DocumentLink } from "@/components/file-upload";
-import { formatCurrency, formatDate, formatMonth } from "@/lib/utils";
+import { WhatsAppButton } from "@/components/whatsapp-button";
+import { formatCurrency, formatDate, formatMonth, monthKey, rentReminderMessage } from "@/lib/utils";
 
 type TenantDetail = {
   id: string;
@@ -45,6 +46,21 @@ const DOC_LABELS: Record<string, string> = {
   RECEIPT: "Receipt",
   OTHER: "Other document",
 };
+
+/** Builds the reminder params for whichever payment matches the current
+ * billing month, falling back to the tenant's standard monthly rent if no
+ * payment row exists for this month yet. */
+function currentMonthReminder(tenant: TenantDetail) {
+  const key = monthKey(new Date()).getTime();
+  const current = tenant.payments.find((p) => monthKey(p.month).getTime() === key);
+  return {
+    tenantName: tenant.name,
+    unit: tenant.unit,
+    month: formatMonth(new Date()),
+    amount: current ? current.amountDue : tenant.monthlyRent,
+    overdue: current?.status === "OVERDUE",
+  };
+}
 
 export default function TenantDetailPage() {
   const params = useParams<{ id: string }>();
@@ -132,6 +148,12 @@ export default function TenantDetailPage() {
             {formatDate(tenant.leaseStart)} – {formatDate(tenant.leaseEnd)}
           </p>
           {tenant.notes && <p className="pt-1 text-sm">{tenant.notes}</p>}
+          <WhatsAppButton
+            phone={tenant.phone}
+            label="Send rent reminder"
+            className="mt-1 w-full"
+            message={rentReminderMessage(currentMonthReminder(tenant))}
+          />
         </CardContent>
       </Card>
 

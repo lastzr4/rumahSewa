@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TenantForm, type TenantFormValues } from "@/components/tenant-form";
-import { formatCurrency, initials } from "@/lib/utils";
+import { WhatsAppButton } from "@/components/whatsapp-button";
+import { formatCurrency, formatMonth, initials, rentReminderMessage } from "@/lib/utils";
 
 type TenantListItem = {
   id: string;
@@ -126,6 +127,18 @@ export default function TenantsPage() {
                         </p>
                       )}
                     </div>
+                    <WhatsAppButton
+                      phone={t.phone}
+                      size="icon"
+                      label=""
+                      message={rentReminderMessage({
+                        tenantName: t.name,
+                        unit: t.unit,
+                        month: formatMonth(new Date()),
+                        amount: t.monthlyRent,
+                        overdue: latest === "OVERDUE",
+                      })}
+                    />
                   </CardContent>
                 </Card>
               </Link>

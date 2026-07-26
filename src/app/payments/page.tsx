@@ -11,7 +11,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PaymentStatusBadge } from "@/components/payment-status-badge";
 import { FileUploadButton } from "@/components/file-upload";
-import { formatCurrency, formatMonth, monthKey } from "@/lib/utils";
+import { WhatsAppButton } from "@/components/whatsapp-button";
+import { formatCurrency, formatMonth, monthKey, rentReminderMessage } from "@/lib/utils";
 
 type PaymentItem = {
   id: string;
@@ -107,6 +108,18 @@ export default function PaymentsPage() {
                   <p className="text-xs text-muted-foreground">Unit {p.tenant.unit}</p>
                 </div>
                 <span className="text-sm font-semibold">{formatCurrency(p.amountDue)}</span>
+                <WhatsAppButton
+                  phone={p.tenant.phone}
+                  size="icon"
+                  label=""
+                  message={rentReminderMessage({
+                    tenantName: p.tenant.name,
+                    unit: p.tenant.unit,
+                    month: formatMonth(p.month),
+                    amount: p.amountDue,
+                    overdue: p.status === "OVERDUE",
+                  })}
+                />
                 <button onClick={() => setActive(p)}>
                   <PaymentStatusBadge status={p.status} />
                 </button>

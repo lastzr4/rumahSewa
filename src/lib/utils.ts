@@ -48,3 +48,42 @@ export function initials(name: string) {
     .map((p) => p[0]?.toUpperCase())
     .join("");
 }
+
+/**
+ * Normalizes a Malaysian phone number for wa.me links: strips everything but
+ * digits, then converts a local "0..." number to the "60..." country-code
+ * form WhatsApp expects. Numbers already in international form (60... or
+ * with a + prefix) pass through unchanged.
+ */
+export function toWhatsAppNumber(phone: string) {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.startsWith("60")) return digits;
+  if (digits.startsWith("0")) return `60${digits.slice(1)}`;
+  return digits;
+}
+
+/** Builds a wa.me deep link that opens a chat with a pre-filled message. */
+export function whatsAppLink(phone: string, message: string) {
+  return `https://wa.me/${toWhatsAppNumber(phone)}?text=${encodeURIComponent(message)}`;
+}
+
+/** Standard monthly rent reminder template, personalized per tenant/payment. */
+export function rentReminderMessage({
+  tenantName,
+  unit,
+  month,
+  amount,
+  overdue,
+}: {
+  tenantName: string;
+  unit: string;
+  month: string;
+  amount: string | number;
+  overdue?: boolean;
+}) {
+  const amountStr = formatCurrency(amount);
+  if (overdue) {
+    return `Hai ${tenantName}, ini peringatan bahawa bayaran sewa unit ${unit} bagi bulan ${month} sebanyak ${amountStr} masih belum diterima dan telah tertunggak. Sila buat pembayaran secepat mungkin. Terima kasih 🙏`;
+  }
+  return `Hai ${tenantName}, ini peringatan mesra untuk bayaran sewa unit ${unit} bagi bulan ${month} sebanyak ${amountStr}. Sila buat pembayaran sebelum tarikh akhir bulan ini. Terima kasih 🙏`;
+}
