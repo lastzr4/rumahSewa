@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Trash2, Plus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
@@ -12,7 +12,9 @@ import { Label } from "@/components/ui/label";
 import { PaymentStatusBadge } from "@/components/payment-status-badge";
 import { FileUploadButton, DocumentLink } from "@/components/file-upload";
 import { WhatsAppButton } from "@/components/whatsapp-button";
+import { UtilityBillDialog, type UtilityBill } from "@/components/utilities-section";
 import {
+  cn,
   dueDateForMonth,
   formatCurrency,
   formatDate,
@@ -33,6 +35,12 @@ type PaymentItem = {
   tenant: { id: string; name: string; unit: string; phone: string; rentDueDay: number };
 };
 
+type UtilityItem = UtilityBill & {
+  tenant: { id: string; name: string; unit: string; phone: string };
+};
+
+type TenantOption = { id: string; name: string; unit: string };
+
 const METHODS = ["CASH", "BANK_TRANSFER", "CARD", "MOBILE_MONEY", "CHECK", "OTHER"];
 
 function monthParam(d: Date) {
@@ -42,20 +50,36 @@ function monthParam(d: Date) {
 export default function PaymentsPage() {
   const [cursor, setCursor] = useState(() => monthKey(new Date()));
   const [payments, setPayments] = useState<PaymentItem[]>([]);
+  const [utilities, setUtilities] = useState<UtilityItem[]>([]);
+  const [tenantOptions, setTenantOptions] = useState<TenantOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [active, setActive] = useState<PaymentItem | null>(null);
+  const [activeUtility, setActiveUtility] = useState<UtilityItem | "new" | null>(null);
+  const [pickTenantOpen, setPickTenantOpen] = useState(false);
+  const [pickedTenantId, setPickedTenantId] = useState("");
 
   const load = useCallback(async (month: Date) => {
     setLoading(true);
-    const res = await fetch(`/api/payments?month=${monthParam(month)}`);
-    const data = await res.json();
-    setPayments(data.payments ?? []);
+    const [paymentsRes, utilitiesRes] = await Promise.all([
+      fetch(`/api/payments?month=${monthParam(month)}`),
+      fetch(`/api/utilities?month=${monthParam(month)}`),
+    ]);
+    const paymentsData = await paymentsRes.json();
+    const utilitiesData = await utilitiesRes.json();
+    setPayments(paymentsData.payments ?? []);
+    setUtilities(utilitiesData.utilityBills ?? []);
     setLoading(false);
   }, []);
 
   useEffect(() => {
     load(cursor);
   }, [cursor, load]);
+
+  useEffect(() => {
+    fetch("/api/tenants?status=ACTIVE")
+      .then((res) => res.json())
+      .then((data) => setTenantOptions(data.tenants ?? []));
+  }, []);
 
   const shiftMonth = (delta: number) => {
     setCursor((c) => new Date(Date.UTC(c.getUTCFullYear(), c.getUTCMonth() + delta, 1)));
@@ -65,6 +89,15 @@ export default function PaymentsPage() {
     (acc, p) => {
       acc.due += Number(p.amountDue);
       if (p.status === "PAID") acc.collected += Number(p.amountPaid ?? p.amountDue);
+      return acc;
+    },
+    { due: 0, collected: 0 }
+  );
+
+  const utilityTotals = utilities.reduce(
+    (acc, u) => {
+      acc.due += Number(u.amountDue);
+      if (u.status === "PAID") acc.collected += Number(u.amountPaid ?? u.amountDue);
       return acc;
     },
     { due: 0, collected: 0 }
@@ -88,7 +121,7 @@ export default function PaymentsPage() {
 
       <Card>
         <CardContent className="flex items-center justify-between p-4 text-sm">
-          <span className="text-muted-foreground">Collected / Due</span>
+          <span className="text-muted-foreground">Rent — Collected / Due</span>
           <span className="font-semibold">
             {formatCurrency(totals.collected)} / {formatCurrency(totals.due)}
           </span>
@@ -139,6 +172,66 @@ export default function PaymentsPage() {
         </div>
       )}
 
+      <div className="flex items-center justify-between pt-2">
+        <h2 className="text-base font-semibold">Utilities</h2>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => {
+            setPickedTenantId("");
+            setPickTenantOpen(true);
+          }}
+        >
+          <Plus className="h-4 w-4" />
+          Add
+        </Button>
+      </div>
+
+      {utilities.length > 0 && (
+        <Card>
+          <CardContent className="flex items-center justify-between p-4 text-sm">
+            <span className="text-muted-foreground">Utilities — Collected / Due</span>
+            <span className="font-semibold">
+              {formatCurrency(utilityTotals.collected)} / {formatCurrency(utilityTotals.due)}
+            </span>
+          </CardContent>
+        </Card>
+      )}
+
+      {!loading && utilities.length === 0 ? (
+        <Card>
+          <CardContent className="p-6 text-center text-sm text-muted-foreground">
+            No utility bills added for this month yet.
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {utilities.map((u) => (
+            <Card
+              key={u.id}
+              className={cn(
+                "cursor-pointer border-l-4",
+                u.status === "PAID" && "border-l-success bg-success/5",
+                u.status === "OVERDUE" && "border-l-destructive bg-destructive/5",
+                u.status === "PENDING" && "border-l-warning bg-warning/5"
+              )}
+              onClick={() => setActiveUtility(u)}
+            >
+              <CardContent className="flex items-center gap-3 p-4">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium">
+                    {u.tenant.name} <span className="text-muted-foreground">· {u.category}</span>
+                  </p>
+                  <p className="text-xs text-muted-foreground">Unit {u.tenant.unit}</p>
+                </div>
+                <span className="text-sm font-semibold">{formatCurrency(u.amountDue)}</span>
+                <PaymentStatusBadge status={u.status} />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
       {active && (
         <RecordPaymentDialog
           payment={active}
@@ -147,6 +240,47 @@ export default function PaymentsPage() {
             setActive(null);
             load(cursor);
           }}
+        />
+      )}
+
+      {pickTenantOpen && (
+        <Dialog open onOpenChange={setPickTenantOpen} title="Add utility bill">
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <Label>Tenant</Label>
+              <Select value={pickedTenantId} onChange={(e) => setPickedTenantId(e.target.value)}>
+                <option value="">Select a tenant…</option>
+                {tenantOptions.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name} · Unit {t.unit}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setPickTenantOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                disabled={!pickedTenantId}
+                onClick={() => {
+                  setPickTenantOpen(false);
+                  setActiveUtility("new");
+                }}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        </Dialog>
+      )}
+
+      {activeUtility && (
+        <UtilityBillDialog
+          tenantId={activeUtility === "new" ? pickedTenantId : activeUtility.tenant.id}
+          bill={activeUtility === "new" ? null : activeUtility}
+          onClose={() => setActiveUtility(null)}
+          onSaved={() => load(cursor)}
         />
       )}
     </main>

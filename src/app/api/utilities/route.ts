@@ -2,10 +2,36 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { monthKey } from "@/lib/utils";
+import { markOverdueUtilities } from "@/lib/utilities";
 
 export const dynamic = "force-dynamic";
 
 const emptyToNull = (v: unknown) => (v === "" ? null : v);
+
+// Lists every tenant's utility bills for a given billing month, so the
+// Payments tab can show utilities the same way it shows rent — one month
+// at a time, across all tenants — instead of only inside each tenant's
+// own page.
+export async function GET(req: NextRequest) {
+  const monthParam = req.nextUrl.searchParams.get("month");
+  if (!monthParam) {
+    return NextResponse.json({ error: "month is required" }, { status: 400 });
+  }
+
+  await markOverdueUtilities();
+
+  const month = monthKey(new Date(`${monthParam}-01`));
+  const utilityBills = await prisma.utilityBill.findMany({
+    where: { month },
+    include: {
+      tenant: { select: { id: true, name: true, unit: true, phone: true } },
+      photos: true,
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return NextResponse.json({ utilityBills });
+}
 
 const createSchema = z.object({
   tenantId: z.string().min(1),

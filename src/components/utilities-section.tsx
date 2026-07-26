@@ -120,7 +120,7 @@ export function UtilitiesSection({
   );
 }
 
-function UtilityBillDialog({
+export function UtilityBillDialog({
   tenantId,
   bill,
   onClose,
