@@ -14,6 +14,10 @@ export type TenantFormValues = {
   unit: string;
   monthlyRent: string;
   occupants: string;
+  rentDueDay: string;
+  depositAmount: string;
+  depositPaid: boolean;
+  depositPaidDate: string;
   leaseStart: string;
   leaseEnd: string;
   status: "ACTIVE" | "INACTIVE";
@@ -26,6 +30,10 @@ const EMPTY: TenantFormValues = {
   unit: "",
   monthlyRent: "",
   occupants: "1",
+  rentDueDay: "1",
+  depositAmount: "",
+  depositPaid: false,
+  depositPaidDate: "",
   leaseStart: "",
   leaseEnd: "",
   status: "ACTIVE",
@@ -136,16 +144,76 @@ export function TenantForm({
           </div>
         </div>
 
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="status">Status</Label>
-          <Select
-            id="status"
-            value={values.status}
-            onChange={(e) => update({ status: e.target.value as "ACTIVE" | "INACTIVE" })}
-          >
-            <option value="ACTIVE">Active</option>
-            <option value="INACTIVE">Inactive</option>
-          </Select>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="rentDueDay">Rent due day (1–31)</Label>
+            <Input
+              id="rentDueDay"
+              type="number"
+              min="1"
+              max="31"
+              step="1"
+              value={values.rentDueDay}
+              onChange={(e) => update({ rentDueDay: e.target.value })}
+              placeholder="5"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="status">Status</Label>
+            <Select
+              id="status"
+              value={values.status}
+              onChange={(e) => update({ status: e.target.value as "ACTIVE" | "INACTIVE" })}
+            >
+              <option value="ACTIVE">Active</option>
+              <option value="INACTIVE">Inactive</option>
+            </Select>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-2 rounded-lg border border-border p-3">
+          <p className="text-sm font-medium">Deposit</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="depositAmount">Deposit amount (RM)</Label>
+              <Input
+                id="depositAmount"
+                type="number"
+                min="0"
+                step="0.01"
+                value={values.depositAmount}
+                onChange={(e) => update({ depositAmount: e.target.value })}
+                placeholder="2400"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="depositPaidDate">Date received</Label>
+              <Input
+                id="depositPaidDate"
+                type="date"
+                value={values.depositPaidDate}
+                disabled={!values.depositPaid}
+                onChange={(e) => update({ depositPaidDate: e.target.value })}
+              />
+            </div>
+          </div>
+          <label htmlFor="depositPaid" className="flex items-center gap-2 pt-1 text-sm">
+            <input
+              id="depositPaid"
+              type="checkbox"
+              className="h-4 w-4 rounded border-input"
+              checked={values.depositPaid}
+              onChange={(e) =>
+                update({
+                  depositPaid: e.target.checked,
+                  depositPaidDate: e.target.checked
+                    ? values.depositPaidDate || new Date().toISOString().slice(0, 10)
+                    : "",
+                })
+              }
+            />
+            Deposit has been received
+          </label>
         </div>
 
         <div className="grid grid-cols-2 gap-3">

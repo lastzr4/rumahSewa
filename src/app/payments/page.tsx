@@ -12,7 +12,14 @@ import { Label } from "@/components/ui/label";
 import { PaymentStatusBadge } from "@/components/payment-status-badge";
 import { FileUploadButton } from "@/components/file-upload";
 import { WhatsAppButton } from "@/components/whatsapp-button";
-import { formatCurrency, formatMonth, monthKey, rentReminderMessage } from "@/lib/utils";
+import {
+  dueDateForMonth,
+  formatCurrency,
+  formatDate,
+  formatMonth,
+  monthKey,
+  rentReminderMessage,
+} from "@/lib/utils";
 
 type PaymentItem = {
   id: string;
@@ -23,7 +30,7 @@ type PaymentItem = {
   paymentDate: string | null;
   paymentMethod: string | null;
   receiptUrl: string | null;
-  tenant: { id: string; name: string; unit: string; phone: string };
+  tenant: { id: string; name: string; unit: string; phone: string; rentDueDay: number };
 };
 
 const METHODS = ["CASH", "BANK_TRANSFER", "CARD", "MOBILE_MONEY", "CHECK", "OTHER"];
@@ -105,7 +112,9 @@ export default function PaymentsPage() {
                   <Link href={`/tenants/${p.tenant.id}`} className="truncate font-medium hover:underline">
                     {p.tenant.name}
                   </Link>
-                  <p className="text-xs text-muted-foreground">Unit {p.tenant.unit}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Unit {p.tenant.unit} · due {formatDate(dueDateForMonth(p.month, p.tenant.rentDueDay))}
+                  </p>
                 </div>
                 <span className="text-sm font-semibold">{formatCurrency(p.amountDue)}</span>
                 <WhatsAppButton
@@ -118,6 +127,7 @@ export default function PaymentsPage() {
                     month: formatMonth(p.month),
                     amount: p.amountDue,
                     overdue: p.status === "OVERDUE",
+                    dueDay: p.tenant.rentDueDay,
                   })}
                 />
                 <button onClick={() => setActive(p)}>

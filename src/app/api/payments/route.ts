@@ -16,7 +16,9 @@ export async function GET(req: NextRequest) {
 
   const payments = await prisma.payment.findMany({
     where: { month },
-    include: { tenant: { select: { id: true, name: true, unit: true, phone: true } } },
+    include: {
+      tenant: { select: { id: true, name: true, unit: true, phone: true, rentDueDay: true } },
+    },
     orderBy: { tenant: { unit: "asc" } },
   });
 

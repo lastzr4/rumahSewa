@@ -35,13 +35,38 @@ export async function ensureMonthPayments(month: Date) {
   );
 }
 
-/** Flips PENDING payments whose month has fully elapsed into OVERDUE. */
+/**
+ * Flips PENDING payments into OVERDUE once their tenant's rent due day for
+ * that billing month has passed — e.g. a tenant due on the 5th goes overdue
+ * on the 6th of that same month, not only once the whole month has elapsed.
+ */
 export async function markOverduePayments() {
-  const currentMonth = monthKey(new Date());
-  await prisma.payment.updateMany({
-    where: { status: "PENDING", month: { lt: currentMonth } },
-    data: { status: "OVERDUE" },
+  const now = new Date();
+
+  const pending = await prisma.payment.findMany({
+    where: { status: "PENDING" },
+    select: {
+      id: true,
+      month: true,
+      tenant: { select: { rentDueDay: true } },
+    },
   });
+
+  const overdueIds = pending
+    .filter((p) => {
+      const due = new Date(
+        Date.UTC(p.month.getUTCFullYear(), p.month.getUTCMonth(), p.tenant.rentDueDay)
+      );
+      return now > due;
+    })
+    .map((p) => p.id);
+
+  if (overdueIds.length > 0) {
+    await prisma.payment.updateMany({
+      where: { id: { in: overdueIds } },
+      data: { status: "OVERDUE" },
+    });
+  }
 }
 
 export async function getDashboardSummary(): Promise<DashboardSummary> {

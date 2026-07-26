@@ -41,6 +41,10 @@ model Tenant {
   unit           String
   monthlyRent    Decimal      @db.Decimal(10, 2)
   occupants      Int          @default(1)
+  rentDueDay     Int          @default(1) // day of the month rent is due, e.g. 5 = the 5th
+  depositAmount  Decimal      @default(0) @db.Decimal(10, 2)
+  depositPaid    Boolean      @default(false)
+  depositPaidDate DateTime?
   leaseStart     DateTime
   leaseEnd       DateTime
   status         TenantStatus @default(ACTIVE)

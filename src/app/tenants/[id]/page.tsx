@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Pencil, Trash2, Phone, Calendar, Users } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2, Phone, Calendar, Users, Wallet } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +10,14 @@ import { PaymentStatusBadge } from "@/components/payment-status-badge";
 import { TenantForm, type TenantFormValues } from "@/components/tenant-form";
 import { FileUploadButton, DocumentLink } from "@/components/file-upload";
 import { WhatsAppButton } from "@/components/whatsapp-button";
-import { formatCurrency, formatDate, formatMonth, monthKey, rentReminderMessage } from "@/lib/utils";
+import {
+  formatCurrency,
+  formatDate,
+  formatMonth,
+  monthKey,
+  ordinal,
+  rentReminderMessage,
+} from "@/lib/utils";
 
 type TenantDetail = {
   id: string;
@@ -19,6 +26,10 @@ type TenantDetail = {
   unit: string;
   monthlyRent: string;
   occupants: number;
+  rentDueDay: number;
+  depositAmount: string;
+  depositPaid: boolean;
+  depositPaidDate: string | null;
   leaseStart: string;
   leaseEnd: string;
   status: "ACTIVE" | "INACTIVE";
@@ -44,7 +55,7 @@ const DOC_LABELS: Record<string, string> = {
   TENANT_ID: "Tenant ID",
   LEASE_AGREEMENT: "Lease Agreement / TnC",
   RECEIPT: "Receipt",
-  OTHER: "Other document",
+  OTHER: "Photo / other document",
 };
 
 /** Builds the reminder params for whichever payment matches the current
@@ -59,6 +70,7 @@ function currentMonthReminder(tenant: TenantDetail) {
     month: formatMonth(new Date()),
     amount: current ? current.amountDue : tenant.monthlyRent,
     overdue: current?.status === "OVERDUE",
+    dueDay: tenant.rentDueDay,
   };
 }
 
@@ -146,7 +158,21 @@ export default function TenantDetailPage() {
           <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
             <Calendar className="h-3.5 w-3.5" />
             {formatDate(tenant.leaseStart)} – {formatDate(tenant.leaseEnd)}
+            <span className="text-muted-foreground/70">
+              · rent due {ordinal(tenant.rentDueDay)}
+            </span>
           </p>
+          <div className="flex items-center justify-between rounded-lg bg-muted/60 px-3 py-2">
+            <p className="flex items-center gap-1.5 text-sm">
+              <Wallet className="h-3.5 w-3.5 text-muted-foreground" />
+              Deposit: {formatCurrency(tenant.depositAmount)}
+            </p>
+            <Badge variant={tenant.depositPaid ? "success" : "muted"}>
+              {tenant.depositPaid
+                ? `Received${tenant.depositPaidDate ? ` ${formatDate(tenant.depositPaidDate)}` : ""}`
+                : "Not received"}
+            </Badge>
+          </div>
           {tenant.notes && <p className="pt-1 text-sm">{tenant.notes}</p>}
           <WhatsAppButton
             phone={tenant.phone}
@@ -170,6 +196,12 @@ export default function TenantDetailPage() {
             tenantId={tenant.id}
             type="LEASE_AGREEMENT"
             label="Upload lease / TnC"
+            onUploaded={load}
+          />
+          <FileUploadButton
+            tenantId={tenant.id}
+            type="OTHER"
+            label="Upload photo"
             onUploaded={load}
           />
         </div>
@@ -231,6 +263,10 @@ export default function TenantDetailPage() {
           unit: tenant.unit,
           monthlyRent: tenant.monthlyRent,
           occupants: String(tenant.occupants ?? 1),
+          rentDueDay: String(tenant.rentDueDay ?? 1),
+          depositAmount: tenant.depositAmount ?? "0",
+          depositPaid: tenant.depositPaid ?? false,
+          depositPaidDate: tenant.depositPaidDate ? tenant.depositPaidDate.slice(0, 10) : "",
           leaseStart: tenant.leaseStart.slice(0, 10),
           leaseEnd: tenant.leaseEnd.slice(0, 10),
           status: tenant.status,

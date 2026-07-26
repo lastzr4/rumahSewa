@@ -4,12 +4,20 @@ import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
+// Empty-string dates come from the form when a field is left blank; treat
+// them as "not set" instead of letting zod's date coercion choke on "".
+const emptyToNull = (v: unknown) => (v === "" ? null : v);
+
 const updateSchema = z.object({
   name: z.string().min(1).optional(),
   phone: z.string().min(1).optional(),
   unit: z.string().min(1).optional(),
   monthlyRent: z.coerce.number().positive().optional(),
   occupants: z.coerce.number().int().positive().optional(),
+  rentDueDay: z.coerce.number().int().min(1).max(31).optional(),
+  depositAmount: z.coerce.number().nonnegative().optional(),
+  depositPaid: z.coerce.boolean().optional(),
+  depositPaidDate: z.preprocess(emptyToNull, z.coerce.date().nullable().optional()),
   leaseStart: z.coerce.date().optional(),
   leaseEnd: z.coerce.date().optional(),
   status: z.enum(["ACTIVE", "INACTIVE"]).optional(),

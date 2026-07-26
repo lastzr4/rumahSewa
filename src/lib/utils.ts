@@ -40,6 +40,19 @@ export function monthKey(date: Date | string) {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
 }
 
+/** "1st", "2nd", "5th", "23rd", etc. */
+export function ordinal(n: number) {
+  const s = ["th", "st", "nd", "rd"];
+  const v = n % 100;
+  return `${n}${s[(v - 20) % 10] || s[v] || s[0]}`;
+}
+
+/** The actual calendar date rent is due for a given billing month + due day. */
+export function dueDateForMonth(month: Date | string, dueDay: number) {
+  const d = typeof month === "string" ? new Date(month) : month;
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), dueDay));
+}
+
 export function initials(name: string) {
   return name
     .split(" ")
@@ -74,16 +87,19 @@ export function rentReminderMessage({
   month,
   amount,
   overdue,
+  dueDay,
 }: {
   tenantName: string;
   unit: string;
   month: string;
   amount: string | number;
   overdue?: boolean;
+  dueDay?: number;
 }) {
   const amountStr = formatCurrency(amount);
+  const dueText = dueDay ? `pada ${ordinal(dueDay)} haribulan` : "sebelum tarikh akhir bulan ini";
   if (overdue) {
-    return `Hai ${tenantName}, ini peringatan bahawa bayaran sewa unit ${unit} bagi bulan ${month} sebanyak ${amountStr} masih belum diterima dan telah tertunggak. Sila buat pembayaran secepat mungkin. Terima kasih 🙏`;
+    return `Hai ${tenantName}, ini peringatan bahawa bayaran sewa unit ${unit} bagi bulan ${month} sebanyak ${amountStr} (sepatutnya ${dueText}) masih belum diterima dan telah tertunggak. Sila buat pembayaran secepat mungkin. Terima kasih 🙏`;
   }
-  return `Hai ${tenantName}, ini peringatan mesra untuk bayaran sewa unit ${unit} bagi bulan ${month} sebanyak ${amountStr}. Sila buat pembayaran sebelum tarikh akhir bulan ini. Terima kasih 🙏`;
+  return `Hai ${tenantName}, ini peringatan mesra untuk bayaran sewa unit ${unit} bagi bulan ${month} sebanyak ${amountStr}. Sila buat pembayaran ${dueText}. Terima kasih 🙏`;
 }

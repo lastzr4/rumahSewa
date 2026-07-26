@@ -18,6 +18,7 @@ type TenantListItem = {
   unit: string;
   monthlyRent: string;
   occupants: number;
+  rentDueDay: number;
   status: "ACTIVE" | "INACTIVE";
   payments: { status: "PAID" | "PENDING" | "OVERDUE" }[];
   _count: { documents: number };
@@ -137,6 +138,7 @@ export default function TenantsPage() {
                         month: formatMonth(new Date()),
                         amount: t.monthlyRent,
                         overdue: latest === "OVERDUE",
+                        dueDay: t.rentDueDay,
                       })}
                     />
                   </CardContent>
