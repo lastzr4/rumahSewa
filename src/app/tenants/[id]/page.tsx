@@ -39,6 +39,7 @@ type TenantDetail = {
     type: string;
     fileName: string;
     fileUrl: string;
+    mimeType: string | null;
   }[];
   payments: {
     id: string;
@@ -210,7 +211,7 @@ export default function TenantDetailPage() {
             {tenant.documents.map((d) => (
               <div key={d.id} className="flex flex-col gap-1">
                 <span className="text-xs text-muted-foreground">{DOC_LABELS[d.type] ?? d.type}</span>
-                <DocumentLink fileUrl={d.fileUrl} fileName={d.fileName} />
+                <DocumentLink fileUrl={d.fileUrl} fileName={d.fileName} mimeType={d.mimeType} />
               </div>
             ))}
           </div>
@@ -241,7 +242,16 @@ export default function TenantDetailPage() {
                         rel="noreferrer"
                         className="text-xs text-primary underline"
                       >
-                        Receipt
+                        {/\.(jpe?g|png|webp|heic|gif)(\?.*)?$/i.test(p.receiptUrl) ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={p.receiptUrl}
+                            alt="Receipt"
+                            className="h-9 w-9 rounded border border-border object-cover"
+                          />
+                        ) : (
+                          "Receipt"
+                        )}
                       </a>
                     )}
                     <PaymentStatusBadge status={p.status} />

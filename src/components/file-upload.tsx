@@ -73,7 +73,39 @@ export function FileUploadButton({
   );
 }
 
-export function DocumentLink({ fileUrl, fileName }: { fileUrl: string; fileName: string }) {
+function isImageFile(mimeType?: string | null, fileUrl?: string) {
+  if (mimeType?.startsWith("image/")) return true;
+  if (fileUrl && /\.(jpe?g|png|webp|heic|gif)(\?.*)?$/i.test(fileUrl)) return true;
+  return false;
+}
+
+export function DocumentLink({
+  fileUrl,
+  fileName,
+  mimeType,
+}: {
+  fileUrl: string;
+  fileName: string;
+  mimeType?: string | null;
+}) {
+  if (isImageFile(mimeType, fileUrl)) {
+    return (
+      <a
+        href={fileUrl}
+        target="_blank"
+        rel="noreferrer"
+        className="flex items-center gap-3 rounded-lg border border-border p-2 text-sm hover:bg-accent"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={fileUrl}
+          alt={fileName}
+          className="h-14 w-14 shrink-0 rounded-md border border-border object-cover"
+        />
+        <span className="truncate">{fileName}</span>
+      </a>
+    );
+  }
   return (
     <a
       href={fileUrl}

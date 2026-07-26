@@ -10,7 +10,7 @@ import { Select } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PaymentStatusBadge } from "@/components/payment-status-badge";
-import { FileUploadButton } from "@/components/file-upload";
+import { FileUploadButton, DocumentLink } from "@/components/file-upload";
 import { WhatsAppButton } from "@/components/whatsapp-button";
 import {
   dueDateForMonth,
@@ -239,11 +239,7 @@ function RecordPaymentDialog({
                 label={receiptUrl ? "Replace receipt" : "Upload receipt"}
                 onUploaded={setReceiptUrl}
               />
-              {receiptUrl && (
-                <a href={receiptUrl} target="_blank" rel="noreferrer" className="text-xs text-primary underline">
-                  View current receipt
-                </a>
-              )}
+              {receiptUrl && <DocumentLink fileUrl={receiptUrl} fileName="Current receipt" />}
             </div>
           </>
         )}
