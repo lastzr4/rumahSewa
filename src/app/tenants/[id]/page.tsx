@@ -10,6 +10,7 @@ import { PaymentStatusBadge } from "@/components/payment-status-badge";
 import { TenantForm, type TenantFormValues } from "@/components/tenant-form";
 import { FileUploadButton, DocumentLink } from "@/components/file-upload";
 import { WhatsAppButton } from "@/components/whatsapp-button";
+import { UtilitiesSection, type UtilityBill } from "@/components/utilities-section";
 import {
   cn,
   formatCurrency,
@@ -51,6 +52,7 @@ type TenantDetail = {
     paymentMethod: string | null;
     receiptUrl: string | null;
   }[];
+  utilityBills: UtilityBill[];
 };
 
 const DOC_LABELS: Record<string, string> = {
@@ -238,6 +240,8 @@ export default function TenantDetailPage() {
           </div>
         )}
       </section>
+
+      <UtilitiesSection tenantId={tenant.id} bills={tenant.utilityBills} onChange={load} />
 
       <section className="flex flex-col gap-2">
         <div className="flex items-center justify-between">

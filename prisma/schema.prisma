@@ -34,6 +34,12 @@ enum PaymentMethod {
   OTHER
 }
 
+enum UtilityStatus {
+  PAID
+  PENDING
+  OVERDUE
+}
+
 model Tenant {
   id             String       @id @default(cuid())
   name           String
@@ -54,6 +60,7 @@ model Tenant {
 
   documents      Document[]
   payments       Payment[]
+  utilityBills   UtilityBill[]
 
   @@index([status])
 }
@@ -90,4 +97,43 @@ model Payment {
   @@unique([tenantId, month])
   @@index([status])
   @@index([month])
+}
+
+// Separate from rent (Payment). Amount varies bill-to-bill (electricity,
+// water, internet, etc.), so entries are added manually per month rather
+// than auto-generated like rent, and each can carry its own photos
+// (the bill itself, a meter reading, proof of payment, ...).
+model UtilityBill {
+  id          String        @id @default(cuid())
+  tenantId    String
+  tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  month       DateTime      // normalized to the 1st of the billing month
+  category    String        // e.g. "Electricity (TNB)", "Water", "Wifi"
+  amountDue   Decimal       @db.Decimal(10, 2)
+  amountPaid  Decimal?      @db.Decimal(10, 2)
+  status      UtilityStatus @default(PENDING)
+  dueDate     DateTime?
+  paymentDate DateTime?
+  notes       String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  photos      UtilityPhoto[]
+
+  @@index([tenantId])
+  @@index([month])
+  @@index([status])
+}
+
+model UtilityPhoto {
+  id            String      @id @default(cuid())
+  utilityBillId String
+  utilityBill   UtilityBill @relation(fields: [utilityBillId], references: [id], onDelete: Cascade)
+  fileName      String
+  fileUrl       String
+  mimeType      String
+  size          Int
+  uploadedAt    DateTime    @default(now())
+
+  @@index([utilityBillId])
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { markOverdueUtilities } from "@/lib/utilities";
 
 export const dynamic = "force-dynamic";
 
@@ -28,11 +29,17 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  await markOverdueUtilities();
+
   const tenant = await prisma.tenant.findUnique({
     where: { id: params.id },
     include: {
       documents: { orderBy: { uploadedAt: "desc" } },
       payments: { orderBy: { month: "desc" } },
+      utilityBills: {
+        orderBy: { month: "desc" },
+        include: { photos: { orderBy: { uploadedAt: "desc" } } },
+      },
     },
   });
 
