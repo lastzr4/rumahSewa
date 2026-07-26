@@ -28,17 +28,25 @@ export async function uploadFile(
   return uploadToLocalDisk(file, folder);
 }
 
+// Deliberately stored OUTSIDE the Next.js "public" folder. A Railway volume
+// mounted straight onto public/uploads introduces an ext4 lost+found
+// directory owned by root, which crashes Next's static-file scan (EACCES)
+// at startup because the app runs as a non-root user. Storing uploads in
+// their own directory and serving them through /api/files/* sidesteps that
+// entirely — Next never scans this folder.
+export const UPLOAD_ROOT = path.join(process.cwd(), "uploads");
+
 async function uploadToLocalDisk(file: File, folder: string): Promise<UploadResult> {
   const bytes = Buffer.from(await file.arrayBuffer());
   const ext = path.extname(file.name) || "";
   const safeName = `${randomUUID()}${ext}`;
-  const dir = path.join(process.cwd(), "public", "uploads", folder);
+  const dir = path.join(UPLOAD_ROOT, folder);
   await mkdir(dir, { recursive: true });
   const filePath = path.join(dir, safeName);
   await writeFile(filePath, bytes);
 
   return {
-    url: `/uploads/${folder}/${safeName}`,
+    url: `/api/files/${folder}/${safeName}`,
     path: filePath,
     size: bytes.length,
     mimeType: file.type || "application/octet-stream",
