@@ -22,7 +22,10 @@ RUN npm run build
 # ---- Runtime ----
 FROM node:20-alpine AS runner
 WORKDIR /app
-RUN apk add --no-cache openssl
+# su-exec lets the entrypoint start as root (to fix ownership on the
+# mounted volume, which Railway always mounts as root:root) and then drop
+# down to the unprivileged "nextjs" user to actually run the app.
+RUN apk add --no-cache openssl su-exec
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
@@ -45,10 +48,15 @@ COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
 RUN mkdir -p /app/uploads && chown -R nextjs:nodejs /app/uploads
 
-USER nextjs
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
+# Stay root here — the entrypoint fixes ownership on whatever gets mounted
+# at /app/uploads (a fresh Railway volume is always root:root, regardless
+# of what the image had at build time) before dropping to "nextjs".
 EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["node", "server.js"]
